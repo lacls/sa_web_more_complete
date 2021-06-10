@@ -26,6 +26,9 @@ import datetime
 import io
 import pickle5 as pickle
 from .get_shopee_comments import slow_loop
+import dash_uploader as du
+
+
 Result = namedtuple(
     "Result", ["result", "progress", "collapse_is_open", "finished_data"]
 )
@@ -145,7 +148,7 @@ context_module=html.Div(children=[
                                 # dbc.Collapse(dbc.Progress(id="progress", color="success",animated=True,className="mb-3",value=15), id="collapse"),
                                 # html.Br(),
                                 # html.P(id="output"),
-
+                                du.Upload(),
                                 dcc.Upload(
                                         id='upload-data',
                                         children=html.Div([
@@ -228,6 +231,8 @@ horizontal_display=html.Div(
         className="horizontal"
     )
 )
+
+du.configure_upload(app, r"storage_folder")
 
 app.layout = html.Div(
     children=[
