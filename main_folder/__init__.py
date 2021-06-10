@@ -14,7 +14,6 @@ import time
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
 from .core import conn,queue,app
-from .tasks import slow_loop
 from dash.dependencies import Input, Output, State
 import uuid
 import redis
@@ -26,6 +25,7 @@ import base64
 import datetime
 import io
 import pickle5 as pickle
+from get_shopee_comments import slow_loop
 Result = namedtuple(
     "Result", ["result", "progress", "collapse_is_open", "finished_data"]
 )
