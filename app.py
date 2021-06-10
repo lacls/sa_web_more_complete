@@ -13,7 +13,6 @@ import time
 #source venv/bin/activate
 from rq.exceptions import NoSuchJobError
 from rq.job import Job
-from .core import conn,queue,app
 from dash.dependencies import Input, Output, State
 import uuid
 import redis
@@ -25,7 +24,7 @@ import base64
 import datetime
 import io
 import pickle5 as pickle
-from .get_shopee_comments import slow_loop
+from main_folder.get_shopee_comments import slow_loop
 Result = namedtuple(
     "Result", ["result", "progress", "collapse_is_open", "finished_data"]
 )
@@ -34,25 +33,24 @@ Result = namedtuple(
 # data["Date"] = pd.to_datetime(data["Date"], format="%Y-%m-%d")
 # data.sort_values("Date", inplace=True)
 
-# external_stylesheets = [
-#     {
-#         "href": "//db.onlinewebfonts.com/c/7e0f75fa1eb5ee523ae2961d4e7a11a6?family=Noway"
-#         "family=text/css",
-#         "rel": "stylesheet",
-#     },
+external_stylesheets = [
+    {
+        "href": "//db.onlinewebfonts.com/c/7e0f75fa1eb5ee523ae2961d4e7a11a6?family=Noway"
+        "family=text/css",
+        "rel": "stylesheet",
+    },
     
-#     dbc.themes.BOOTSTRAP
-# ]
+    dbc.themes.BOOTSTRAP
+]
 
-# external_scripts = [
-#     {'src': 'assets/custom.js'},
+external_scripts = [
+    {'src': 'assets/custom.js'},
  
-# ]
-# app = dash.Dash(server=flask.Flask(__name__), \
-#                 external_stylesheets=external_stylesheets,\
-#                 external_scripts=external_scripts,)
+]
+app = dash.Dash(__name__, \
+                external_stylesheets=external_stylesheets,\
+                external_scripts=external_scripts,)
 
-# queue=Queue(connection=conn)
 
 context_module=html.Div(children=[
                          
@@ -137,11 +135,8 @@ context_module=html.Div(children=[
                                  style={"padding-top":"20px","padding-bottom":"20px","text-align":"center"}),  
                                 # html.Div(dbc.Progress(id="progress_test", color="success",animated=True,className="mb-3",value=25)),
                                 dcc.Interval(id="interval", interval=50000),
-                                html.Br(),
-                                dbc.Spinner(html.Div(id="loading-output"),color="secondary", type="grow"),
-                                html.Br(),
-                                html.Div(id="jumbotron-report"),
-                                
+                                dbc.Spinner(html.Div(id="loading-output")),
+
                                 # dbc.Collapse(dbc.Progress(id="progress", color="success",animated=True,className="mb-3",value=15), id="collapse"),
                                 # html.Br(),
                                 # html.P(id="output"),
@@ -163,7 +158,7 @@ context_module=html.Div(children=[
                                             'margin': '10px'
                                         },
                                     ),
-                                html.Div(id='output-data-upload'),
+                                    html.Div(id='output-data-upload'),
                                 html.Div([
                                     dbc.Button(
                                         "*Support Language",
@@ -174,7 +169,7 @@ context_module=html.Div(children=[
                                     ),
                                     dbc.Collapse(
                                         dbc.Card(dbc.CardBody("This content is hidden in the collapse")),
-                                        id="collapse",
+                                        id="collapse_",
                                     ),
                                 ],
                                     style={"padding-top":"30px"})
@@ -255,55 +250,40 @@ app.layout = html.Div(
     ],
 )
 ##
-df=None
-def parse_data(contents, filename):
+# current_file_name=""
+# def parse_contents(contents, filename):
+#     global current_file_name
+#     content_type, content_string = contents.split(',')
+#     decoded = base64.b64decode(content_string)
+#     try:
+#         current_file_name=filename
+#         if 'csv' in filename:
+#             # Assume that the user uploaded a CSV file
+#             df = pd.read_csv(
+#                 io.StringIO(decoded.decode('utf-8')))
+#             pickle.dump(df,open(f"storage_folder/{filename}.pickle","wb"))
+#         elif 'xls' in filename:
+#             # Assume that the user uploaded an excel file
+#             df = pd.read_excel(io.BytesIO(decoded))
+#     except Exception as e:
+#         print(e)
+#         return html.Div([
+#             'There was an error processing this file.'
+#         ])
 
-    decoded = base64.b64decode(contents)
-    try:
-        if "csv" in filename:
-            # Assume that the user uploaded a CSV or TXT file
-            df = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-        elif "xls" in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-        elif "txt" or "tsv" in filename:
-            # Assume that the user upl, delimiter = r'\s+'oaded an excel file
-            df = pd.read_csv(io.StringIO(decoded.decode("utf-8")), delimiter=r"\s+")
-        elif "pickle" in filename:
-            df = pd.read_pickle(io.BytesIO(decoded))
-    except Exception as e:
-        print(e)
-        return html.Div([
-            'There was an error processing this file.'
-        ])
-    return df
+# @app.callback(Output('output-data-upload', 'children'),
+#               Input('upload-data', 'contents'),
+#               State('upload-data', 'filename'),
+#               State('upload-data', 'last_modified'))
+# def update_output(list_of_contents, list_of_names, list_of_dates):
+#     if list_of_contents is not None:
+#         children = [
+#             parse_contents(c, n, d) for c, n, d in
+#             zip(list_of_contents, list_of_names, list_of_dates)]
+#         return children
 
-@app.callback(
-    Output("output-data-upload", "children"),
-    [Input("upload-data", "contents"), Input("upload-data", "filename")],
-)
-def update_output(contents,filename):
-   global df
-   if contents:
-        contents = contents[0]
-        filename = filename[0]
-        df = parse_data(contents, filename)  
-        return [    dbc.Toast(
-                    "Yey, you've done the upload",
-                    id="positioned-toast",
-                    header="Notification",
-                    dismissable=True,
-                    icon="primary",
-                    duration=3000,
-                    is_open=True,
-                    style={"position": "fixed", "top": 66, "right": 10, "width": 350},
-                ),]
-
-
-#Crawling comments
+#Percentage Update
 previous_click=0
-folder_storage=""
-
 @app.callback(
     Output("loading-output", "children"),
     [Input("summit_button", "n_clicks")],
@@ -314,55 +294,11 @@ def submit(n_clicks, text):
     Submit a job to the queue, log the id in submitted-store
     """
     global previous_click
-    global folder_storage
     if text:
         if previous_click!=n_clicks:
-            folder_storage=slow_loop(text)
-        return  dbc.Alert("You've just done with getting 30 most popular products's comments", color="primary"),
+            slow_loop(text)
+    return  dbc.Alert("This is a primary alert", color="primary"),
 
-
-@app.callback(
-    Output("jumbotron-report","children"),
-    [Input("loading-output","children")],
-)
-def run_model_to_Redic(dont_care):
-    global folder_storage
-    if folder_storage:
-    ## load the model
-        return dbc.Jumbotron(
-                        children=
-                        [
-                            html.H1("Congraluations, you've just done", className="display-3"),
-                            html.P(
-                                "Your customer insights will be presented as below",
-                                className="lead",
-                            ),
-                            html.Hr(className="my-2"),
-                            html.P(
-                                f"Generally, we have 15% in positive, 28% in negative and blabla neutral with 1230 comments",
-                            ),
-                            dbc.Button(
-                            "Know more",
-                            id="collapse-button-learn-more",
-                            className="mb-3",
-                            color="primary",
-                                ),
-                            dbc.Collapse(
-                            dbc.Card(dbc.CardBody("This content is hidden in the collapse")),
-                                id="collapse-learn-more",),
-                        ],
-                        id="jumbo_tron"
-                    ),
-##collapse - know -more open
-@app.callback(
-    Output("collapse-learn-more", "is_open"),
-    [Input("collapse-button-learn-more", "n_clicks")],
-    [State("collapse-learn-more", "is_open")],
-)
-def toggle_collapse(n, is_open):
-    if n:
-        return not is_open
-    return is_open
 # @app.callback(
 #     [
 #         Output("output", "children"),
@@ -426,7 +362,7 @@ def toggle_collapse(n, is_open):
 #     return True 
 
 @app.callback(
-    Output("collapse", "is_open"),
+    Output("collapse_", "is_open"),
     [Input("collapse-button", "n_clicks")],
     [dash.dependencies.State("collapse", "is_open")],
 )
@@ -435,5 +371,5 @@ def toggle_collapse(n, is_open):
         return not is_open
     return is_open
 
-# if __name__ == "__main__":
-#     app.run_server(debug=True, host=os.getenv("APP_HOST", "127.0.0.1"))
+if __name__ == "__main__":
+    app.run_server(debug=True, host=os.getenv("APP_HOST", "127.0.0.1"))

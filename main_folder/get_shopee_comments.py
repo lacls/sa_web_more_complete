@@ -16,11 +16,10 @@ def slow_loop(link):
     options = webdriver.ChromeOptions()
     options.add_argument('headless')
     options.add_argument('window-size=1200x600')
-    # driver = webdriver.Chrome(chrome_options=options)
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(chrome_options=options)
+    # driver = webdriver.Chrome()
     driver.get(link)
     comments=[]
-    sleep(3)
     while True:
         try:
             # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, 'shop-page__all-products-section')))
@@ -68,7 +67,7 @@ def slow_loop(link):
             try:
                 ##check whether or not dublicate to stop loading the next page
                     driver.find_element_by_class_name("product-ratings").find_elements_by_tag_name("button")[-1].click()
-                    sleep(2)
+                    sleep(1.5)
                     dublicate=0
                     run_to_main_comments=True
                     
@@ -98,4 +97,4 @@ def slow_loop(link):
 
     file_name=link.split("/")[-1]
     pickle.dump(comments,open(f"{file_name}.pickle","wb"))
-    return "successful"
+    return f"{file_name}.pickle"
